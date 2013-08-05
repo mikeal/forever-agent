@@ -17,6 +17,9 @@ function ForeverAgent(options) {
   self.minSockets = self.options.minSockets || ForeverAgent.defaultMinSockets
   self.on('free', function(socket, host, port) {
     var name = host + ':' + port
+      , onIdleError = function() {
+          socket.destroy()
+        }
     if (self.requests[name] && self.requests[name].length) {
       self.requests[name].shift().onSocket(socket)
     } else if (self.sockets[name].length < self.minSockets) {
@@ -24,9 +27,6 @@ function ForeverAgent(options) {
       self.freeSockets[name].push(socket)
       
       // if an error happens while we don't use the socket anyway, meh, throw the socket away
-      function onIdleError() {
-        socket.destroy()
-      }
       socket._onIdleError = onIdleError
       socket.on('error', onIdleError)
     } else {
