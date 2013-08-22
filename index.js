@@ -15,11 +15,16 @@ function ForeverAgent(options) {
   self.freeSockets = {}
   self.maxSockets = self.options.maxSockets || Agent.defaultMaxSockets
   self.minSockets = self.options.minSockets || ForeverAgent.defaultMinSockets
+  self.timeout = self.options.timeout || 0
+  self.timeouts = {}
+  for (var i in self.options.timeouts) {
+    self.timeouts[i] = self.options.timeouts[i]
+  }
   self.on('free', function(socket, host, port) {
     var name = host + ':' + port
     if (self.requests[name] && self.requests[name].length) {
       self.requests[name].shift().onSocket(socket)
-    } else if (self.sockets[name].length < self.minSockets) {
+    } else if (self.sockets[name].length <= self.minSockets) {
       if (!self.freeSockets[name]) self.freeSockets[name] = []
       self.freeSockets[name].push(socket)
       
@@ -44,7 +49,21 @@ util.inherits(ForeverAgent, Agent)
 ForeverAgent.defaultMinSockets = 5
 
 
-ForeverAgent.prototype.createConnection = net.createConnection
+
+ForeverAgent.prototype.createConnection = function() {
+  var self = this
+  var socket = net.createConnection.apply(this, arguments)
+
+  socket.on('connect', function() {
+    var name = socket.remoteAddress + ':' + socket.remotePort
+
+    socket.setTimeout(self.timeouts[name] || self.timeout, function() {
+      socket.end();
+    })
+  })
+  return socket;
+};
+
 ForeverAgent.prototype.addRequestNoreuse = Agent.prototype.addRequest
 ForeverAgent.prototype.addRequest = function(req, host, port) {
   var name = host + ':' + port
