@@ -8,6 +8,7 @@ var util = require('util')
   , AgentSSL = require('https').Agent
 
 function ForeverAgent(options) {
+  // console.log("New ForeverAgent "+options)
   var self = this
   self.options = options || {}
   self.requests = {}
@@ -19,17 +20,21 @@ function ForeverAgent(options) {
     var name = host + ':' + port
     if (self.requests[name] && self.requests[name].length) {
       self.requests[name].shift().onSocket(socket)
+      console.log("New request for socket")
     } else if (self.sockets[name].length < self.minSockets) {
       if (!self.freeSockets[name]) self.freeSockets[name] = []
       self.freeSockets[name].push(socket)
-      
+      // console.log("Made socket free")
+
       // if an error happens while we don't use the socket anyway, meh, throw the socket away
       var onIdleError = function() {
         socket.destroy()
+        console.log("Socket on idle error")
       }
       socket._onIdleError = onIdleError
       socket.on('error', onIdleError)
     } else {
+      console.log("Socket destroy")
       // If there are no pending requests just destroy the
       // socket and it will get removed from the pool. This
       // gets us out of timeout issues and allows us to
@@ -48,18 +53,21 @@ ForeverAgent.prototype.createConnection = net.createConnection
 ForeverAgent.prototype.addRequestNoreuse = Agent.prototype.addRequest
 ForeverAgent.prototype.addRequest = function(req, host, port) {
   var name = host + ':' + port
-  if (this.freeSockets[name] && this.freeSockets[name].length > 0 && !req.useChunkedEncodingByDefault) {
+  if (this.freeSockets[name] && this.freeSockets[name].length > 0) {
+    // console.log("Add request to free socket")
     var idleSocket = this.freeSockets[name].pop()
     idleSocket.removeListener('error', idleSocket._onIdleError)
     delete idleSocket._onIdleError
     req._reusedSocket = true
     req.onSocket(idleSocket)
   } else {
+    console.log("Add request to new socket "+name+" "+(this.freeSockets[name] ? this.freeSockets[name].length : -1)+" "+req.useChunkedEncodingByDefault)
     this.addRequestNoreuse(req, host, port)
   }
 }
 
 ForeverAgent.prototype.removeSocket = function(s, name, host, port) {
+  // console.log("Remove socket")
   if (this.sockets[name]) {
     var index = this.sockets[name].indexOf(s)
     if (index !== -1) {
@@ -70,7 +78,7 @@ ForeverAgent.prototype.removeSocket = function(s, name, host, port) {
     delete this.sockets[name]
     delete this.requests[name]
   }
-  
+
   if (this.freeSockets[name]) {
     var index = this.freeSockets[name].indexOf(s)
     if (index !== -1) {
