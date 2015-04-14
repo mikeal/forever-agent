@@ -67,7 +67,7 @@ ForeverAgent.prototype.addRequest = function(req, host, port) {
     host = options.host
   }
 
-  if (this.freeSockets[name] && this.freeSockets[name].length > 0 && !req.useChunkedEncodingByDefault) {
+  if (this.freeSockets[name] && this.freeSockets[name].length > 0 && !req.chunkedEncoding) {
     var idleSocket = this.freeSockets[name].pop()
     idleSocket.removeListener('error', idleSocket._onIdleError)
     delete idleSocket._onIdleError
