@@ -138,9 +138,9 @@ ForeverAgent.prototype.destroy = function() {
       socket.destroy();
     });
 
-  self.requests    = {};
-  self.sockets     = {};
-  self.freeSockets = {};
+  this.requests    = {};
+  this.sockets     = {};
+  this.freeSockets = {};
 }
 
 function ForeverAgentSSL (options) {
