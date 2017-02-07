@@ -29,6 +29,11 @@ function ForeverAgent(options) {
   self.on('free', function(socket, host, port) {
     var name = getConnectionName(host, port)
 
+    // Ignore destroyed sockets
+    if (!socket.writable) {
+      return;
+    }
+
     if (self.requests[name] && self.requests[name].length) {
       self.requests[name].shift().onSocket(socket)
     } else if ( self.sockets[name] && self.sockets[name].length < self.minSockets) {
