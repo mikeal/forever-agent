@@ -38,8 +38,12 @@ function ForeverAgent(options) {
   self.freeSockets = {};
 
   self.on('free', function(socket, host, port) {
-    var name = getConnectionName(host, port);
+    // Ignore destroyed sockets
+    if (!socket.writable) {
+      return;
+    }
 
+    var name = getConnectionName(host, port);
     var requests = self.requests[name];
     var sockets  = self.sockets[name];
 
